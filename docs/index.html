@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Chess Lobby MVP</title>
+
+<style>
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #f3f4f6;
+  color: #111827;
+}
+
+header {
+  background: #111827;
+  color: white;
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.logo {
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.user-box {
+  text-align: right;
+  font-size: 14px;
+}
+
+main {
+  max-width: 1100px;
+  margin: 24px auto;
+  padding: 0 16px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 20px;
+}
+
+.card {
+  background: white;
+  border-radius: 14px;
+  padding: 20px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+  margin-bottom: 20px;
+}
+
+h2 {
+  margin-top: 0;
+}
+
+.big-button {
+  width: 100%;
+  padding: 18px;
+  font-size: 20px;
+  border: none;
+  border-radius: 12px;
+  background: #2563eb;
+  color: white;
+  cursor: pointer;
+}
+
+.big-button:hover {
+  background: #1d4ed8;
+}
+
+button {
+  padding: 10px 14px;
+  border: none;
+  border-radius: 8px;
+  background: #e5e7eb;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #d1d5db;
+}
+
+.friend,
+.game-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.friend:last-child,
+.game-row:last-child {
+  border-bottom: none;
+}
+
+.status-online {
+  color: #16a34a;
+  font-weight: bold;
+}
+
+.status-offline {
+  color: #6b7280;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.stat {
+  background: #f9fafb;
+  border-radius: 10px;
+  padding: 14px;
+  text-align: center;
+}
+
+.stat strong {
+  font-size: 24px;
+  display: block;
+}
+
+.badge {
+  display: inline-block;
+  background: #eef2ff;
+  color: #3730a3;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 13px;
+}
+
+.hidden {
+  display: none;
+}
+
+@media (max-width: 800px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .user-box {
+    text-align: left;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <div class="logo">Chess Room</div>
+
+  <div class="user-box">
+    <div>Игрок: <b>Igor</b></div>
+    <div>Рейтинг: <b id="rating">1420</b></div>
+  </div>
+</header>
+
+<main>
+
+  <div class="grid">
+
+    <section>
+
+      <div class="card">
+        <h2>Быстрая игра</h2>
+        <p>
+          Режим: <span class="badge">5 + 5</span>
+        </p>
+
+        <button class="big-button" onclick="startSearch()">
+          Найти соперника по рейтингу
+        </button>
+
+        <p id="searchStatus" class="hidden">
+          Идёт поиск соперника рядом с вашим рейтингом...
+        </p>
+      </div>
+
+      <div class="card">
+        <h2>Персональный вызов</h2>
+
+        <input id="challengeName"
+               placeholder="Имя игрока"
+               style="width:100%;padding:12px;font-size:16px;margin-bottom:10px;">
+
+        <button onclick="sendChallenge()">Вызвать на игру 5+5</button>
+
+        <p id="challengeStatus"></p>
+      </div>
+
+      <div class="card">
+        <h2>Архив партий</h2>
+
+        <div id="archive"></div>
+      </div>
+
+    </section>
+
+    <aside>
+
+      <div class="card">
+        <h2>Статистика</h2>
+
+        <div class="stats">
+          <div class="stat">
+            <strong id="wins">18</strong>
+            Побед
+          </div>
+
+          <div class="stat">
+            <strong id="losses">11</strong>
+            Поражений
+          </div>
+
+          <div class="stat">
+            <strong id="draws">4</strong>
+            Ничьих
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Друзья</h2>
+
+        <div id="friends"></div>
+      </div>
+
+      <div class="card">
+        <h2>Текущий рейтинг</h2>
+        <p style="font-size:32px;margin:0;">
+          <b>1420</b>
+        </p>
+        <p>Класс: любитель</p>
+      </div>
+
+    </aside>
+
+  </div>
+
+</main>
+
+<script>
+/*
+  Демо-данные.
+  Потом это будет приходить из Supabase.
+*/
+
+const friends = [
+  { name: "Alex", rating: 1390, online: true },
+  { name: "David", rating: 1510, online: true },
+  { name: "Mira", rating: 1285, online: false },
+  { name: "Sergey", rating: 1444, online: true }
+];
+
+const archive = [
+  {
+    opponent: "Alex",
+    result: "Победа",
+    ratingChange: "+8",
+    date: "07.07.2026",
+    mode: "5+5"
+  },
+  {
+    opponent: "Mira",
+    result: "Ничья",
+    ratingChange: "+1",
+    date: "06.07.2026",
+    mode: "5+5"
+  },
+  {
+    opponent: "David",
+    result: "Поражение",
+    ratingChange: "-6",
+    date: "05.07.2026",
+    mode: "5+5"
+  }
+];
+
+/*
+  Рендер списка друзей
+*/
+
+function renderFriends() {
+  const box = document.getElementById("friends");
+  box.innerHTML = "";
+
+  friends.forEach(friend => {
+    const div = document.createElement("div");
+    div.className = "friend";
+
+    div.innerHTML = `
+      <div>
+        <b>${friend.name}</b><br>
+        <small>Рейтинг: ${friend.rating}</small><br>
+        <small class="${friend.online ? "status-online" : "status-offline"}">
+          ${friend.online ? "online" : "offline"}
+        </small>
+      </div>
+
+      <button onclick="quickChallenge('${friend.name}')">
+        Вызов
+      </button>
+    `;
+
+    box.appendChild(div);
+  });
+}
+
+/*
+  Рендер архива партий
+*/
+
+function renderArchive() {
+  const box = document.getElementById("archive");
+  box.innerHTML = "";
+
+  archive.forEach(game => {
+    const div = document.createElement("div");
+    div.className = "game-row";
+
+    div.innerHTML = `
+      <div>
+        <b>${game.result}</b> против ${game.opponent}<br>
+        <small>${game.date} · ${game.mode} · рейтинг ${game.ratingChange}</small>
+      </div>
+
+      <button onclick="openGame('${game.opponent}')">
+        Смотреть
+      </button>
+    `;
+
+    box.appendChild(div);
+  });
+}
+
+/*
+  Автоподбор соперника
+*/
+
+function startSearch() {
+  const status = document.getElementById("searchStatus");
+  status.classList.remove("hidden");
+  status.textContent = "Идёт поиск соперника 5+5 рядом с вашим рейтингом...";
+
+  setTimeout(() => {
+    status.textContent = "Соперник найден: Sergey, рейтинг 1444. Создаём партию...";
+  }, 1200);
+}
+
+/*
+  Персональный вызов
+*/
+
+function sendChallenge() {
+  const name = document.getElementById("challengeName").value.trim();
+  const status = document.getElementById("challengeStatus");
+
+  if (!name) {
+    status.textContent = "Введите имя игрока.";
+    return;
+  }
+
+  status.textContent = `Вызов отправлен игроку ${name}.`;
+}
+
+function quickChallenge(name) {
+  document.getElementById("challengeName").value = name;
+  document.getElementById("challengeStatus").textContent =
+    `Вызов отправлен игроку ${name}.`;
+}
+
+/*
+  Просмотр партии из архива
+*/
+
+function openGame(opponent) {
+  alert("Открыть архивную партию против " + opponent);
+}
+
+/*
+  Старт страницы
+*/
+
+renderFriends();
+renderArchive();
+</script>
+
+
+
+<!-- ========================================
+     SERVICE CONSOLE
+======================================== -->
+
+<div id="service-console">
+GPT  | v1.0.0
+</div>
+
+<div class="row" id="build-down">
+deploy: --
+</div>
+
+<script>
+(function () {
+  const now = new Date();
+
+  const pad = n =>
+    String(n).padStart(2, "0");
+
+  const date =
+      pad(now.getDate())
+    + "."
+    + pad(now.getMonth() + 1)
+    + "."
+    + now.getFullYear();
+
+  const time =
+      pad(now.getHours())
+    + ":"
+    + pad(now.getMinutes());
+
+  document
+    .getElementById("build-down")
+    .textContent =
+      "deploy: "
+      + date
+      + " "
+      + time;
+})();
+</script>
+
+
+
+</body>
+</html>
+  
