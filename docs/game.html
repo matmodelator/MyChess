@@ -7,6 +7,11 @@
 <title>Chess Game</title>
 
 <style>
+
+:root{
+  --piece-size: 52px;
+}
+
 *{
   box-sizing:border-box;
 }
@@ -125,7 +130,7 @@ button:hover{
   display:flex;
   align-items:center;
   justify-content:center;
-  font-size:clamp(24px,6vw,58px);
+  font-size:var(--piece-size);
   user-select:none;
   cursor:pointer;
 }
@@ -315,8 +320,20 @@ function resizeLayout(){
 
   const w=window.innerWidth;
   const h=window.innerHeight;
-
   const S=Math.min(w,h);
+
+  const diagonal = Math.sqrt(w*w + h*h);
+
+// размер фигуры от диагонали
+let pieceSize = diagonal * 0.045;
+
+// ограничения, чтобы не было слишком мелко/крупно
+pieceSize = Math.max(34, Math.min(pieceSize, S / 8 * 0.82));
+
+document.documentElement.style.setProperty(
+  "--piece-size",
+  pieceSize + "px"
+);
 
   board.style.width=S+"px";
   board.style.height=S+"px";
@@ -439,10 +456,39 @@ function clickSquare(squareName){
     return;
   }
 
+  const piece=chess.get(selectedSquare);
+
+  if(isPromotionMove(piece, selectedSquare, squareName)){
+    showPromotionDialog(selectedSquare, squareName);
+    return;
+  }
+
+  makeMove(selectedSquare, squareName, null);
+}
+
+function getLegalTargets(squareName){
+  return chess.moves({
+    square:squareName,
+    verbose:true
+  }).map(move=>move.to);
+}
+
+function isPromotionMove(piece, from, to){
+  if(!piece || piece.type!=="p") return false;
+
+  const targetRank=to[1];
+
+  return (
+    (piece.color==="w" && targetRank==="8") ||
+    (piece.color==="b" && targetRank==="1")
+  );
+}
+
+function makeMove(from, to, promotion){
   const move=chess.move({
-    from:selectedSquare,
-    to:squareName,
-    promotion:"q"
+    from:from,
+    to:to,
+    promotion:promotion || undefined
   });
 
   selectedSquare=null;
@@ -456,13 +502,30 @@ function clickSquare(squareName){
   renderBoard();
 }
 
-function getLegalTargets(squareName){
-  return chess.moves({
-    square:squareName,
-    verbose:true
-  }).map(move=>move.to);
-}
+function showPromotionDialog(from, to){
+  const choice=prompt(
+    "Превратить пешку в:\nq = ферзь\nr = ладья\nb = слон\nn = конь",
+    "q"
+  );
 
+  if(!choice){
+    selectedSquare=null;
+    legalTargets=[];
+    renderBoard();
+    return;
+  }
+
+  const p=choice.toLowerCase();
+
+  if(!["q","r","b","n"].includes(p)){
+    alert("Неверный выбор.");
+    renderBoard();
+    return;
+  }
+
+  makeMove(from, to, p);
+}
+  
 function renderMoves(){
   const movesList=document.getElementById("movesList");
   const history=chess.history();
@@ -564,7 +627,7 @@ window.addEventListener("resize",resizeLayout);
 ======================================== -->
 
 <div id="service-console">
-+chess.js  | v2.0.0
+превращение пешки и размер фигур  | v2.1.0
 </div>
 
 <div class="row" id="build-down">
