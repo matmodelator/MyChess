@@ -133,6 +133,11 @@ button:hover{
   font-size:var(--piece-size);
   user-select:none;
   cursor:pointer;
+
+  min-width:0;
+  min-height:0;
+  overflow:hidden;
+  line-height:1;
 }
 
 .light{
@@ -144,6 +149,9 @@ button:hover{
 }
 
 .piece{
+  display:block;
+  line-height:1;
+  pointer-events:none;
   transition:transform 0.25s ease;
 }
 
@@ -176,6 +184,26 @@ button:hover{
   gap:8px;
 }
 
+.promo{
+
+    width:90px;
+    height:90px;
+
+    font-size:64px;
+
+    border:2px solid #bbb;
+    border-radius:12px;
+
+    background:white;
+
+    cursor:pointer;
+}
+
+.promo:hover{
+
+    background:#eef5ff;
+}
+  
 #status{
   padding:8px 10px;
   background:#fff;
@@ -245,10 +273,38 @@ button:hover{
   order:3;
 }
 </style>
+  
 </head>
 
 <body>
 
+<div id="promotionDialog" style="
+display:none;
+position:fixed;
+inset:0;
+background:rgba(0,0,0,.45);
+justify-content:center;
+align-items:center;
+z-index:1000;
+">
+
+<div style="
+background:white;
+padding:20px;
+border-radius:12px;
+display:flex;
+gap:20px;
+">
+
+<button class="promo" onclick="choosePromotion('q')">♕</button>
+<button class="promo" onclick="choosePromotion('r')">♖</button>
+<button class="promo" onclick="choosePromotion('b')">♗</button>
+<button class="promo" onclick="choosePromotion('n')">♘</button>
+
+</div>
+
+</div>
+  
 <div id="layout">
 
   <div id="chatPanel" class="side-panel">
@@ -322,13 +378,8 @@ function resizeLayout(){
   const h=window.innerHeight;
   const S=Math.min(w,h);
 
-  const diagonal = Math.sqrt(w*w + h*h);
-
-// размер фигуры от диагонали
-let pieceSize = diagonal * 0.045;
-
-// ограничения, чтобы не было слишком мелко/крупно
-pieceSize = Math.max(34, Math.min(pieceSize, S / 8 * 0.82));
+  const cellSize = S / 8;
+const pieceSize = cellSize * 0.92;
 
 document.documentElement.style.setProperty(
   "--piece-size",
@@ -502,28 +553,28 @@ function makeMove(from, to, promotion){
   renderBoard();
 }
 
-function showPromotionDialog(from, to){
-  const choice=prompt(
-    "Превратить пешку в:\nq = ферзь\nr = ладья\nb = слон\nn = конь",
-    "q"
-  );
+let promotionFrom="";
+let promotionTo="";
 
-  if(!choice){
-    selectedSquare=null;
-    legalTargets=[];
-    renderBoard();
-    return;
-  }
+function showPromotionDialog(from,to){
 
-  const p=choice.toLowerCase();
+    promotionFrom=from;
+    promotionTo=to;
 
-  if(!["q","r","b","n"].includes(p)){
-    alert("Неверный выбор.");
-    renderBoard();
-    return;
-  }
+    document.getElementById("promotionDialog").style.display="flex";
 
-  makeMove(from, to, p);
+}
+
+function choosePromotion(piece){
+
+    document.getElementById("promotionDialog").style.display="none";
+
+    makeMove(
+        promotionFrom,
+        promotionTo,
+        piece
+    );
+
 }
   
 function renderMoves(){
@@ -627,7 +678,7 @@ window.addEventListener("resize",resizeLayout);
 ======================================== -->
 
 <div id="service-console">
-превращение пешки и размер фигур  | v2.1.0
+fix превращение пешки и размер фигур  | v2.1.1
 </div>
 
 <div class="row" id="build-down">
@@ -662,6 +713,8 @@ deploy: --
       + time;
 })();
 </script>
+
+
   
 </body>
 </html>
