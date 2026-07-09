@@ -19,7 +19,6 @@ body{
   overflow:hidden;
   font-family:Arial,sans-serif;
   background:#111827;
-  color:#111827;
 }
 
 #layout{
@@ -128,6 +127,7 @@ button:hover{
   justify-content:center;
   font-size:clamp(24px,6vw,58px);
   user-select:none;
+  cursor:pointer;
 }
 
 .light{
@@ -145,6 +145,10 @@ button:hover{
 .selected{
   outline:4px solid #2563eb;
   outline-offset:-4px;
+}
+
+.legal{
+  box-shadow:inset 0 0 0 999px rgba(37,99,235,0.18);
 }
 
 /* =========================
@@ -165,6 +169,13 @@ button:hover{
   display:flex;
   flex-direction:column;
   gap:8px;
+}
+
+#status{
+  padding:8px 10px;
+  background:#fff;
+  border-top:1px solid #d1d5db;
+  font-size:14px;
 }
 
 /* =========================
@@ -246,14 +257,15 @@ button:hover{
     <div id="settings">
       <button onclick="swapPanels()">Поменять поля</button>
       <button onclick="flipBoard()">Перевернуть доску</button>
+      <button onclick="newGame()">Новая партия</button>
     </div>
   </div>
 
   <div id="boardPanel">
 
     <div class="player-bar">
-      <span>Alex</span>
-      <strong>05:00</strong>
+      <span id="topPlayer">Alex</span>
+      <strong id="blackTimer">05:00</strong>
     </div>
 
     <div id="boardWrap">
@@ -261,8 +273,8 @@ button:hover{
     </div>
 
     <div class="player-bar">
-      <span>Вы</span>
-      <strong>05:00</strong>
+      <span id="bottomPlayer">Вы</span>
+      <strong id="whiteTimer">05:00</strong>
     </div>
 
   </div>
@@ -270,26 +282,19 @@ button:hover{
   <div id="movesPanel" class="side-panel">
     <div class="panel-title">Ходы</div>
 
-    <div class="panel-body" id="movesList">
-      <div class="move-row">
-        <span>1.</span>
-        <span>e4</span>
-        <span>e5</span>
-      </div>
-      <div class="move-row">
-        <span>2.</span>
-        <span>Nf3</span>
-        <span>Nc6</span>
-      </div>
-    </div>
+    <div class="panel-body" id="movesList"></div>
+
+    <div id="status">Ход белых</div>
 
     <div class="actions">
-      <button>🤝 Предложить ничью</button>
-      <button>🏳 Сдаться</button>
+      <button onclick="offerDraw()">🤝 Предложить ничью</button>
+      <button onclick="resign()">🏳 Сдаться</button>
     </div>
   </div>
 
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/chess.js@0.10.3/chess.min.js"></script>
 
 <script>
 const settings={
@@ -297,16 +302,9 @@ const settings={
   flipBoard:false
 };
 
-const startPosition={
-  a8:"♜",b8:"♞",c8:"♝",d8:"♛",e8:"♚",f8:"♝",g8:"♞",h8:"♜",
-  a7:"♟",b7:"♟",c7:"♟",d7:"♟",e7:"♟",f7:"♟",g7:"♟",h7:"♟",
-
-  a2:"♙",b2:"♙",c2:"♙",d2:"♙",e2:"♙",f2:"♙",g2:"♙",h2:"♙",
-  a1:"♖",b1:"♘",c1:"♗",d1:"♕",e1:"♔",f1:"♗",g1:"♘",h1:"♖"
-};
-
-let boardState={...startPosition};
+let chess=new Chess();
 let selectedSquare=null;
+let legalTargets=[];
 
 function resizeLayout(){
   const layout=document.getElementById("layout");
@@ -326,7 +324,6 @@ function resizeLayout(){
   if(w>=h){
     layout.classList.remove("portrait");
     layout.classList.add("landscape");
-
     layout.style.flexDirection="row";
 
     const side=(w-S)/2;
@@ -342,7 +339,6 @@ function resizeLayout(){
   }else{
     layout.classList.remove("landscape");
     layout.classList.add("portrait");
-
     layout.style.flexDirection="column";
 
     const side=(h-S)/2;
@@ -362,9 +358,15 @@ function renderBoard(){
   const board=document.getElementById("board");
   board.innerHTML="";
 
-  const files=["a","b","c","d","e","f","g","h"];
+  const files=settings.flipBoard
+    ? ["h","g","f","e","d","c","b","a"]
+    : ["a","b","c","d","e","f","g","h"];
 
-  for(let rank=8;rank>=1;rank--){
+  const ranks=settings.flipBoard
+    ? [1,2,3,4,5,6,7,8]
+    : [8,7,6,5,4,3,2,1];
+
+  for(const rank of ranks){
     for(let fileIndex=0;fileIndex<8;fileIndex++){
       const file=files[fileIndex];
       const squareName=file+rank;
@@ -372,48 +374,147 @@ function renderBoard(){
       const square=document.createElement("div");
       square.className="square";
 
-      const isLight=(fileIndex+rank)%2===0;
+      const realFileIndex=["a","b","c","d","e","f","g","h"].indexOf(file);
+      const isLight=(realFileIndex+rank)%2===0;
       square.classList.add(isLight ? "light" : "dark");
 
       if(selectedSquare===squareName){
         square.classList.add("selected");
       }
 
-      const piece=document.createElement("span");
-      piece.className="piece";
-      piece.textContent=boardState[squareName] || "";
+      if(legalTargets.includes(squareName)){
+        square.classList.add("legal");
+      }
 
-      square.appendChild(piece);
+      const pieceData=chess.get(squareName);
+
+      if(pieceData){
+        const piece=document.createElement("span");
+        piece.className="piece";
+        piece.textContent=getPieceSymbol(pieceData);
+        square.appendChild(piece);
+      }
 
       square.onclick=()=>clickSquare(squareName);
-
       board.appendChild(square);
     }
   }
 
-  applyBoardRotation();
+  renderMoves();
+  renderStatus();
+}
+
+function getPieceSymbol(piece){
+  const symbols={
+    p:{w:"♙",b:"♟"},
+    r:{w:"♖",b:"♜"},
+    n:{w:"♘",b:"♞"},
+    b:{w:"♗",b:"♝"},
+    q:{w:"♕",b:"♛"},
+    k:{w:"♔",b:"♚"}
+  };
+
+  return symbols[piece.type][piece.color];
 }
 
 function clickSquare(squareName){
+  if(chess.game_over()) return;
+
   if(!selectedSquare){
-    if(!boardState[squareName]) return;
+    const piece=chess.get(squareName);
+
+    if(!piece) return;
+    if(piece.color!==chess.turn()) return;
 
     selectedSquare=squareName;
+    legalTargets=getLegalTargets(squareName);
     renderBoard();
     return;
   }
 
   if(selectedSquare===squareName){
     selectedSquare=null;
+    legalTargets=[];
     renderBoard();
     return;
   }
 
-  boardState[squareName]=boardState[selectedSquare];
-  delete boardState[selectedSquare];
+  const move=chess.move({
+    from:selectedSquare,
+    to:squareName,
+    promotion:"q"
+  });
 
   selectedSquare=null;
+  legalTargets=[];
+
+  if(!move){
+    renderBoard();
+    return;
+  }
+
   renderBoard();
+}
+
+function getLegalTargets(squareName){
+  return chess.moves({
+    square:squareName,
+    verbose:true
+  }).map(move=>move.to);
+}
+
+function renderMoves(){
+  const movesList=document.getElementById("movesList");
+  const history=chess.history();
+
+  movesList.innerHTML="";
+
+  for(let i=0;i<history.length;i+=2){
+    const row=document.createElement("div");
+    row.className="move-row";
+
+    row.innerHTML=`
+      <span>${Math.floor(i/2)+1}.</span>
+      <span>${history[i] || ""}</span>
+      <span>${history[i+1] || ""}</span>
+    `;
+
+    movesList.appendChild(row);
+  }
+
+  movesList.scrollTop=movesList.scrollHeight;
+}
+
+function renderStatus(){
+  const status=document.getElementById("status");
+
+  if(chess.in_checkmate()){
+    status.textContent=chess.turn()==="w"
+      ? "Мат. Победили чёрные."
+      : "Мат. Победили белые.";
+    return;
+  }
+
+  if(chess.in_stalemate()){
+    status.textContent="Пат. Ничья.";
+    return;
+  }
+
+  if(chess.in_draw()){
+    status.textContent="Ничья.";
+    return;
+  }
+
+  if(chess.in_check()){
+    status.textContent=chess.turn()==="w"
+      ? "Шах белым. Ход белых."
+      : "Шах чёрным. Ход чёрных.";
+    return;
+  }
+
+  status.textContent=chess.turn()==="w"
+    ? "Ход белых"
+    : "Ход чёрных";
 }
 
 function swapPanels(){
@@ -430,22 +531,22 @@ function swapPanels(){
 
 function flipBoard(){
   settings.flipBoard=!settings.flipBoard;
-  applyBoardRotation();
+  renderBoard();
 }
 
-function applyBoardRotation(){
-  const board=document.getElementById("board");
-  const pieces=document.querySelectorAll(".piece");
+function newGame(){
+  chess=new Chess();
+  selectedSquare=null;
+  legalTargets=[];
+  renderBoard();
+}
 
-  board.style.transform=settings.flipBoard
-    ? "rotate(180deg)"
-    : "rotate(0deg)";
+function offerDraw(){
+  alert("Предложение ничьей отправлено.");
+}
 
-  pieces.forEach(piece=>{
-    piece.style.transform=settings.flipBoard
-      ? "rotate(180deg)"
-      : "rotate(0deg)";
-  });
+function resign(){
+  alert("Вы сдались.");
 }
 
 resizeLayout();
@@ -454,13 +555,16 @@ renderBoard();
 window.addEventListener("resize",resizeLayout);
 </script>
 
+
+
+  
   
 <!-- ========================================
      SERVICE CONSOLE
 ======================================== -->
 
 <div id="service-console">
-GPT  | v1.0.0
++chess.js  | v2.0.0
 </div>
 
 <div class="row" id="build-down">
