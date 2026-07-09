@@ -311,6 +311,21 @@ button:hover{
 .portrait.swap #movesPanel{
   order:3;
 }
+
+#service-console{
+    position:fixed;
+    left:0;
+    bottom:20px;
+    ...
+}
+
+#build-down{
+    position:fixed;
+    left:0;
+    bottom:0;
+    ...
+}
+  
 </style>
   
 </head>
@@ -636,12 +651,23 @@ function clickSquare(squareName){
 
   const piece=chess.get(selectedSquare);
 
-  if(isPromotionMove(piece, selectedSquare, squareName)){
+ if(isPromotionMove(piece, selectedSquare, squareName)){
+
+  const legalPromotion = chess.moves({
+    square:selectedSquare,
+    verbose:true
+  }).some(move =>
+    move.to === squareName &&
+    move.promotion
+  );
+
+  if(legalPromotion){
     showPromotionDialog(selectedSquare, squareName);
     return;
   }
+}
 
-  makeMove(selectedSquare, squareName, null);
+makeMove(selectedSquare, squareName, null);
 }
 
 function getLegalTargets(squareName){
@@ -817,7 +843,7 @@ window.addEventListener("resize",resizeLayout);
 ======================================== -->
 
 <div id="service-console">
-player bar  | v2.3.0
+фикс превращение и консоль  | v2.3.1
 </div>
 
 <div class="row" id="build-down">
