@@ -367,6 +367,13 @@ let chess=new Chess();
 let selectedSquare=null;
 let legalTargets=[];
 
+let whiteTime = 300;
+let blackTime = 300;
+
+let currentPlayer = "w";
+
+let timerId = null;  
+
 function resizeLayout(){
   const layout=document.getElementById("layout");
   const boardPanel=document.getElementById("boardPanel");
@@ -422,6 +429,64 @@ document.documentElement.style.setProperty(
   }
 }
 
+function formatTime(sec){
+
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+
+    return String(m).padStart(2,"0") + ":" +
+           String(s).padStart(2,"0");
+
+}
+
+function updateClocks(){
+
+    document.getElementById("whiteTimer").textContent =
+        formatTime(whiteTime);
+
+    document.getElementById("blackTimer").textContent =
+        formatTime(blackTime);
+
+}
+
+function startClock(){
+
+    clearInterval(timerId);
+
+    timerId = setInterval(() => {
+
+        if(currentPlayer==="w"){
+
+            whiteTime--;
+
+            if(whiteTime<=0){
+                whiteTime=0;
+                updateClocks();
+                clearInterval(timerId);
+                alert("Белые проиграли по времени.");
+                return;
+            }
+
+        }else{
+
+            blackTime--;
+
+            if(blackTime<=0){
+                blackTime=0;
+                updateClocks();
+                clearInterval(timerId);
+                alert("Чёрные проиграли по времени.");
+                return;
+            }
+
+        }
+
+        updateClocks();
+
+    },1000);
+
+}
+  
 function renderBoard(){
   const board=document.getElementById("board");
   board.innerHTML="";
@@ -496,6 +561,17 @@ function clickSquare(squareName){
 
     selectedSquare=squareName;
     legalTargets=getLegalTargets(squareName);
+
+if(currentPlayer==="w"){
+    whiteTime+=5;
+    currentPlayer="b";
+}else{
+    blackTime+=5;
+    currentPlayer="w";
+}
+
+startClock();
+    
     renderBoard();
     return;
   }
@@ -665,7 +741,9 @@ function resign(){
 
 resizeLayout();
 renderBoard();
-
+updateClocks();
+startClock();
+  
 window.addEventListener("resize",resizeLayout);
 </script>
 
@@ -678,7 +756,7 @@ window.addEventListener("resize",resizeLayout);
 ======================================== -->
 
 <div id="service-console">
-fix превращение пешки и размер фигур  | v2.1.1
+часы  | v2.2.0
 </div>
 
 <div class="row" id="build-down">
