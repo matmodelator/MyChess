@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Chess Sound Test</title>
+
+<style>
+*{box-sizing:border-box;}
+
+body{
+  margin:0;
+  min-height:100vh;
+  font-family:Arial,sans-serif;
+  background:#111827;
+  color:#111827;
+  padding:20px;
+}
+
+.app{
+  max-width:760px;
+  margin:auto;
+  background:#f3f4f6;
+  border-radius:14px;
+  padding:20px;
+}
+
+h1{margin-top:0;}
+
+.controls{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-bottom:18px;
+}
+
+button{
+  padding:12px 16px;
+  border:none;
+  border-radius:10px;
+  background:#d1d5db;
+  cursor:pointer;
+  font-size:16px;
+}
+
+button:hover{background:#c4c9d1;}
+
+.sound-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(170px,1fr));
+  gap:12px;
+}
+
+.volume-box{margin-bottom:18px;}
+
+input[type="range"]{width:100%;}
+
+#service-console,
+#build-down{
+  margin-top:14px;
+  padding:6px 10px;
+  background:#111827;
+  color:#22c55e;
+  font:12px Consolas,monospace;
+  border-radius:6px;
+}
+
+#build-down{
+  margin-top:4px;
+  color:#93c5fd;
+}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+  <h1>Chess Sound Test</h1>
+
+  <div class="volume-box">
+    <label>Volume: <span id="volumeValue">60</span>%</label>
+    <input type="range" min="0" max="100" value="60"
+           oninput="changeVolume(this.value)">
+  </div>
+
+  <div class="controls">
+    <button id="muteBtn" onclick="toggleMute()">Mute</button>
+    <button onclick="playAllSounds()">Test All</button>
+  </div>
+
+  <div class="sound-grid">
+    <button onclick="playSound('move')">♟ Move</button>
+    <button onclick="playSound('capture')">⚔ Capture</button>
+    <button onclick="playSound('check')">♔ Check</button>
+    <button onclick="playSound('mate')">♚ Mate</button>
+    <button onclick="playSound('draw')">🤝 Draw</button>
+    <button onclick="playSound('win')">🏆 Win</button>
+    <button onclick="playSound('lose')">💀 Lose</button>
+    <button onclick="playSound('illegal')">⛔ Illegal</button>
+    <button onclick="playSound('timeout')">⏰ Timeout</button>
+    <button onclick="playSound('yourTurn')">🔔 Your Turn</button>
+    <button onclick="playSound('challenge')">📨 Challenge</button>
+  </div>
+
+  <div id="service-console">
+    sound-test | generated sounds | v1.0.0
+  </div>
+
+  <div id="build-down">
+    deploy: --
+  </div>
+
+</div>
+
+<script src="js/sounds.js"></script>
+
+<script>
+function changeVolume(value){
+  document.getElementById("volumeValue").textContent=value;
+  setSoundVolume(value);
+}
+
+function toggleMute(){
+  const enabled=toggleSound();
+  document.getElementById("muteBtn").textContent =
+    enabled ? "Mute" : "Unmute";
+}
+
+document.body.addEventListener("click",()=>{
+  const ctx=getAudioCtx();
+  if(ctx.state==="suspended"){
+    ctx.resume();
+  }
+},{once:true});
+
+(function(){
+  const now=new Date();
+  const pad=n=>String(n).padStart(2,"0");
+
+  document.getElementById("build-down").textContent =
+    "deploy: " +
+    pad(now.getDate()) + "." +
+    pad(now.getMonth()+1) + "." +
+    now.getFullYear() + " " +
+    pad(now.getHours()) + ":" +
+    pad(now.getMinutes());
+})();
+</script>
+
+
+
+
+<!-- ========================================
+     SERVICE CONSOLE
+======================================== -->
+
+<div id="service-console">
+GPT  | v1.0.0
+</div>
+
+<div class="row" id="build-down">
+deploy: --
+</div>
+
+<script>
+(function () {
+  const now = new Date();
+
+  const pad = n =>
+    String(n).padStart(2, "0");
+
+  const date =
+      pad(now.getDate())
+    + "."
+    + pad(now.getMonth() + 1)
+    + "."
+    + now.getFullYear();
+
+  const time =
+      pad(now.getHours())
+    + ":"
+    + pad(now.getMinutes());
+
+  document
+    .getElementById("build-down")
+    .textContent =
+      "deploy: "
+      + date
+      + " "
+      + time;
+})();
+</script>
+
+
+
+</body>
+</html>
+  
