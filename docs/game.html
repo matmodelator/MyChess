@@ -223,6 +223,26 @@ button:hover{
   gap:8px;
 }
 
+.illegal{
+    animation:illegalMove .25s ease;
+}
+
+@keyframes illegalMove{
+
+    0%{
+        box-shadow:inset 0 0 0 999px rgba(255,0,0,0);
+    }
+
+    30%{
+        box-shadow:inset 0 0 0 999px rgba(255,0,0,.45);
+    }
+
+    100%{
+        box-shadow:inset 0 0 0 999px rgba(255,0,0,0);
+    }
+
+}
+  
 .promo{
 
     width:90px;
@@ -312,18 +332,36 @@ button:hover{
   order:3;
 }
 
+/* =========================
+   SERVICE CONSOLE
+========================= */
+  
 #service-console{
-    position:fixed;
-    left:0;
-    bottom:20px;
-    ...
+  position:fixed;
+  left:10px;
+  bottom:56px;
+  z-index:2000;
+
+  background:rgba(17,24,39,.92);
+  color:#22c55e;
+  font:12px Consolas, monospace;
+
+  padding:5px 8px;
+  border-radius:6px;
 }
 
 #build-down{
-    position:fixed;
-    left:0;
-    bottom:0;
-    ...
+  position:fixed;
+  left:10px;
+  bottom:32px;
+  z-index:2000;
+
+  background:rgba(17,24,39,.92);
+  color:#93c5fd;
+  font:12px Consolas, monospace;
+
+  padding:5px 8px;
+  border-radius:6px;
 }
   
 </style>
@@ -430,6 +468,7 @@ gap:20px;
 <script src="https://cdn.jsdelivr.net/npm/chess.js@0.10.3/chess.min.js"></script>
 
 <script>
+ 
 const settings={
   swapPanels:false,
   flipBoard:false
@@ -688,6 +727,31 @@ function isPromotionMove(piece, from, to){
   );
 }
 
+function flashIllegal(squareName){
+
+    const files=settings.flipBoard
+        ? ["h","g","f","e","d","c","b","a"]
+        : ["a","b","c","d","e","f","g","h"];
+
+    const ranks=settings.flipBoard
+        ? [1,2,3,4,5,6,7,8]
+        : [8,7,6,5,4,3,2,1];
+
+    const index =
+        ranks.indexOf(Number(squareName[1])) * 8 +
+        files.indexOf(squareName[0]);
+
+    const square =
+        document.getElementById("board").children[index];
+
+    square.classList.add("illegal");
+
+    setTimeout(()=>{
+        square.classList.remove("illegal");
+    },250);
+
+}
+  
 function makeMove(from, to, promotion){
   const move=chess.move({
     from:from,
@@ -698,10 +762,11 @@ function makeMove(from, to, promotion){
   selectedSquare=null;
   legalTargets=[];
 
-  if(!move){
+ if(!move){
+    flashIllegal(to);
     renderBoard();
     return;
-  }
+}
 
 if(currentPlayer==="w"){
     whiteTime+=5;
@@ -843,7 +908,7 @@ window.addEventListener("resize",resizeLayout);
 ======================================== -->
 
 <div id="service-console">
-фикс превращение и консоль  | v2.3.1
+нелегальный ход и консоль  | v2.4.0
 </div>
 
 <div class="row" id="build-down">
