@@ -105,13 +105,52 @@ button:hover{
   width:100%;
   height:42px;
   color:white;
-  display:flex;
-  justify-content:space-between;
+  display:grid;
+  grid-template-columns:1fr auto 76px;
   align-items:center;
-  padding:0 14px;
-  font-size:15px;
+  gap:8px;
+  padding:0 10px;
+  font-size:13px;
+  flex-shrink:0;
 }
 
+.player-info{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  min-width:0;
+}
+
+.avatar{
+  width:28px;
+  height:28px;
+  border-radius:50%;
+  background:#374151;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-weight:bold;
+  flex-shrink:0;
+}
+
+.rating,
+.meta{
+  color:#9ca3af;
+  font-size:11px;
+}
+
+.game-result{
+  text-align:center;
+  font-weight:bold;
+  color:#facc15;
+}
+
+.timer{
+  text-align:right;
+  font-size:20px;
+  font-family:monospace;
+}
+  
 #boardWrap{
   display:flex;
   justify-content:center;
@@ -324,19 +363,37 @@ gap:20px;
 
   <div id="boardPanel">
 
-    <div class="player-bar">
-      <span id="topPlayer">Alex</span>
-      <strong id="blackTimer">05:00</strong>
+   <div class="player-bar opponent-bar">
+  <div class="player-info">
+    <div class="avatar">A</div>
+    <div>
+      <div><b id="topPlayer">Alex</b> <span class="rating">1508</span></div>
+      <div class="meta">🇮🇱 Israel · Team A</div>
     </div>
+  </div>
+
+  <div class="game-result" id="topResult"></div>
+
+  <strong class="timer" id="blackTimer">05:00</strong>
+</div>
 
     <div id="boardWrap">
       <div id="board"></div>
     </div>
 
-    <div class="player-bar">
-      <span id="bottomPlayer">Вы</span>
-      <strong id="whiteTimer">05:00</strong>
+    <div class="player-bar self-bar">
+  <div class="player-info">
+    <div class="avatar">I</div>
+    <div>
+      <div><b id="bottomPlayer">Вы</b> <span class="rating">1420</span></div>
+      <div class="meta">🇮🇱 Israel · My Team</div>
     </div>
+  </div>
+
+  <div class="game-result" id="mainResult">5+5</div>
+
+  <strong class="timer" id="whiteTimer">05:00</strong>
+</div>
 
   </div>
 
@@ -383,10 +440,12 @@ function resizeLayout(){
 
   const w=window.innerWidth;
   const h=window.innerHeight;
-  const S=Math.min(w,h);
+  
+  const playerBars = 84; // 42 сверху + 42 снизу
+  const S = Math.min(w, h - playerBars);
 
   const cellSize = S / 8;
-const pieceSize = cellSize * 0.92;
+  const pieceSize = cellSize * 0.92;
 
 document.documentElement.style.setProperty(
   "--piece-size",
@@ -410,7 +469,8 @@ document.documentElement.style.setProperty(
     movesPanel.style.height=h+"px";
 
     boardPanel.style.width=S+"px";
-    boardPanel.style.height=h+"px";
+    boardPanel.style.height=(S + playerBars)+"px";
+ 
   }else{
     layout.classList.remove("landscape");
     layout.classList.add("portrait");
@@ -425,7 +485,7 @@ document.documentElement.style.setProperty(
     chatPanel.style.width=w+"px";
 
     boardPanel.style.width=w+"px";
-    boardPanel.style.height=S+"px";
+    boardPanel.style.height=(S + playerBars)+"px";
   }
 }
 
@@ -562,16 +622,7 @@ function clickSquare(squareName){
     selectedSquare=squareName;
     legalTargets=getLegalTargets(squareName);
 
-if(currentPlayer==="w"){
-    whiteTime+=5;
-    currentPlayer="b";
-}else{
-    blackTime+=5;
-    currentPlayer="w";
-}
-
-startClock();
-    
+   
     renderBoard();
     return;
   }
@@ -626,6 +677,16 @@ function makeMove(from, to, promotion){
     return;
   }
 
+if(currentPlayer==="w"){
+    whiteTime+=5;
+    currentPlayer="b";
+}else{
+    blackTime+=5;
+    currentPlayer="w";
+}
+
+startClock();
+  
   renderBoard();
 }
 
@@ -756,7 +817,7 @@ window.addEventListener("resize",resizeLayout);
 ======================================== -->
 
 <div id="service-console">
-часы  | v2.2.0
+player bar  | v2.3.0
 </div>
 
 <div class="row" id="build-down">
